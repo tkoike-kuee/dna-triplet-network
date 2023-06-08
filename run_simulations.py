@@ -25,7 +25,7 @@ import os
 #    ("localhost", 2046),
 #]
 #client = cupyck.Client(hosts)
-cupyck_sess = cupyck.GPUSession(max_seqlen=200, nblocks=1024, nthreads=128)
+cupyck_sess = cupyck.GPUSession(max_seqlen=200, nblocks=2048, nthreads=512)
 simulator = primo.models.Simulator(cupyck_sess)
 
 cnn_model = input("model name:")
@@ -33,28 +33,14 @@ file=input("file:")
 # In[3]:
 dataset_name = input("dataset:")+"/"
 import os
-data_dir = '/home/work/tkoike/primo-classification/'
+data_dir = ''
 data_dir = data_dir+dataset_name
-num_tab = int(input(".h5(0) or .npy(1):"))
 
-if(num_tab==0):
-    tar_name=input("dna sequences file name:")
-    que_name=tar_name #input("query file name:")
-    out_name=input("output file name:")
-    target_seqs = pd.read_hdf(os.path.join(data_dir,'targets/{}/{}/{}.h5'.format(cnn_model,file,tar_name)))
-    query_seqs = pd.read_hdf(os.path.join(data_dir,'queries/{}/{}/{}.h5'.format(cnn_model,file,que_name)))
-if(num_tab==1):
-    tar_name=input("dna sequences file name:")
-    que_name=tar_name #input("query file name:")
-    index_name=input("dna sequences index file name:")
-    out_name=input("output file name:")
-    q_index=np.load(os.path.join(data_dir,'queries/{}/{}/{}.npy'.format(cnn_model,file,index_name)))
-    q_data=np.load(os.path.join(data_dir,'queries/{}/{}/{}.npy'.format(cnn_model,file,que_name)))
-    t_index = np.load(os.path.join(data_dir,'targets/{}/{}/{}.npy'.format(cnn_model,file,index_name)))
-    t_data = np.load(os.path.join(data_dir,'targets/{}/{}/{}.npy'.format(cnn_model,file,tar_name)))
-    target_seqs=pd.DataFrame(t_data,index=t_index,columns=["FeatureSequence"])
-    query_seqs=pd.DataFrame(q_data,index=q_index,columns=["FeatureSequence"])
-# In[4]:
+tar_name=input("dna sequences file name:")
+que_name=tar_name
+out_name=input("output file name:")
+target_seqs = pd.read_hdf(os.path.join(data_dir,'targets/{}/{}/{}.h5'.format(cnn_model,file,tar_name)))
+query_seqs = pd.read_hdf(os.path.join(data_dir,'queries/{}/{}/{}.h5'.format(cnn_model,file,que_name)))
 total_store = pd.DataFrame()
 if not os.path.exists(data_dir+'simulation/{}'.format(cnn_model)):
     os.mkdir(data_dir+'simulation/{}'.format(cnn_model))

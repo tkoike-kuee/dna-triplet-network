@@ -76,7 +76,7 @@ class Encoder:
         if model_path is None:
             self.model = tf.keras.Sequential([
                 layers.Dense(self.input_dim/2, activation = 'relu', input_shape=[self.input_dim]),
-                layers.Dense(self.output_len * 4, activation='relu'),
+                layers.Dense(self.output_len * 4, activation='relu',name='flat-seq'),
                 layers.Reshape([self.output_len, 4]),
                 layers.Activation('softmax'),
                 layers.Lambda(

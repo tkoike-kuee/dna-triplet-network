@@ -1,0 +1,3 @@
+*.py
+!run_simulation.py
+!dna_encode.py

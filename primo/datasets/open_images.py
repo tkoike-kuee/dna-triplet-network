@@ -2,10 +2,12 @@ import os
 import sys
 import numpy as np
 import pandas as pd
+import tensorflow as tf
 
 from PIL import Image
-
+import random
 from .dataset import Dataset
+from tqdm import tqdm
 
 class OpenImagesTrain(Dataset):
     def __init__(self, path, train, switch_every = 1000, model=None):
@@ -52,6 +54,52 @@ class OpenImagesTrain(Dataset):
 
                 yield df.index.values[pairs], df.values[pairs]
 
+    def makeDataset(self, batch_size):
+        feature_dir = os.path.join(self.path, 'features')
+        if self.model != None:
+            feature_dir = os.path.join(feature_dir, self.model)
+        df = pd.read_hdf(os.path.join(feature_dir, self.train))
+
+        x=df.values
+        y=np.array([int(tbl_index.split("_")[-1]) for tbl_index in df.index]).reshape(-1,1)
+        return tf.data.Dataset.from_tensor_slices((x, y)).shuffle(buffer_size=len(x)*2).batch(batch_size,drop_remainder=True)
+
+
+    def makePairs(self, num_classes=10):
+        feature_dir = os.path.join(self.path, 'features')
+        if self.model != None:
+            feature_dir = os.path.join(feature_dir, self.model)
+        df = pd.read_hdf(os.path.join(feature_dir, self.train))
+
+        x = df.values
+        y = np.array([int(tbl_index.split("_")[-1]) for tbl_index in df.index])
+
+        digit_indices = [np.where(y == i)[0] for i in range(num_classes)]
+
+        pairs = list()
+        labels = list()
+
+        for idx1 in range(len(x)):
+            x1 = x[idx1]
+            label1 = y[idx1]
+            idx2 = random.choice(digit_indices[label1])
+            x2 = x[idx2]
+            
+            labels += list([1])
+            pairs += [[x1, x2]]
+        
+            label2 = random.randint(0, num_classes-1)
+            while label2 == label1:
+                label2 = random.randint(0, num_classes-1)
+
+            idx2 = random.choice(digit_indices[label2])
+            x2 = x[idx2]
+            
+            labels += list([0])
+            pairs += [[x1, x2]]
+            
+        return np.array(pairs), np.array(labels)
+                
 class OpenImagesVal(Dataset):
     
     def __init__(self, val_path, model = None):
@@ -67,3 +115,38 @@ class OpenImagesVal(Dataset):
         while True:
             pairs = np.random.permutation(n)[:batch_size*2].reshape(-1,2)
             yield self.df.index.values[pairs], self.df.values[pairs]
+    
+    def makeDataset(self,batch_size):
+        x=self.df.values
+        y=np.array([int(tbl_index.split("_")[-1]) for tbl_index in self.df.index]).reshape(-1,1)
+        return tf.data.Dataset.from_tensor_slices((x, y)).shuffle(buffer_size=len(x)*2).batch(batch_size,drop_remainder=True)
+
+    def makePairs(self, num_classes=10):
+        x = self.df.values
+        y = np.array([int(tbl_index.split("_")[-1]) for tbl_index in self.df.index])
+
+        digit_indices = [np.where(y == i)[0] for i in range(num_classes)]
+
+        pairs = list()
+        labels = list()
+
+        for idx1 in range(len(x)):
+            x1 = x[idx1]
+            label1 = y[idx1]
+            idx2 = random.choice(digit_indices[label1])
+            x2 = x[idx2]
+            
+            labels += list([1])
+            pairs += [[x1, x2]]
+        
+            label2 = random.randint(0, num_classes-1)
+            while label2 == label1:
+                label2 = random.randint(0, num_classes-1)
+
+            idx2 = random.choice(digit_indices[label2])
+            x2 = x[idx2]
+            
+            labels += list([0])
+            pairs += [[x1, x2]]
+            
+        return np.array(pairs), np.array(labels)

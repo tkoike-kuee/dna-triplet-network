@@ -3,6 +3,8 @@ from tensorflow.keras import layers
 
 import numpy as np
 import pandas as pd
+import cupyck
+import gc
 
 class EncoderTrainer:
 
@@ -11,13 +13,7 @@ class EncoderTrainer:
         self.encoder = encoder
         self.predictor = predictor
 
-        # Can't use the sequential Keras model anymore because we're combining two data streams (i.e. no longer strictly sequential).
-        # Instead, we use the functional model.
-
-        # Remember: Batch dimension is implied.
-        # "2" - for pair of images.
-
-        X_pairs = layers.Input([2, encoder.input_dim])
+        # X_pairs = layers.Input([2, encoder.input_dim])
 
         # Split the images (since a Keras model can only take one input)
         # Slices: (batch dimension, first item in the pair, remaining feature vector dimensions)
@@ -25,8 +21,10 @@ class EncoderTrainer:
 
         # Essentially, we started with a batch of feature-vector pairs...
         # ...And turned them into a pair of feature-vector batches.
-        X1, X2 = layers.Lambda(lambda X: (X[:,0,:], X[:,1,:]))(X_pairs)
-        distances = layers.Lambda(lambda Xs: tf.sqrt(tf.reduce_sum(tf.square(Xs[0]-Xs[1]), axis=1)))([X1,X2])
+        # X1, X2 = layers.Lambda(lambda X: (X[:,0,:], X[:,1,:]))(X_pairs)
+
+        X1 = layers.Input(shape=encoder.input_dim)
+        X2 = layers.Input(shape=encoder.input_dim)
 
         # Independently transforms the batches of feature vectors into soft-max encoded DNA sequences.
         S1 = encoder(X1)
@@ -47,14 +45,13 @@ class EncoderTrainer:
         y_h = predictor(S_pairs_T)
         y_h_T = layers.Reshape([1])(y_h)
 
-        # Calcdists exists as a convenience property, if one needs to perform a distance calculation on the GPU at the same time (no training happening).
-        self.calcdists = tf.keras.Model(inputs=X_pairs, outputs=distances)
         # The actual trainable model.
-        self.model = tf.keras.Model(inputs=X_pairs, outputs=y_h_T)
+        self.model = tf.keras.Model(inputs=[X1, X2], outputs=y_h_T)
+        self.model.summary()
         self.predictor.trainable(False)
 
 
-    def refit_predictor(self, predictor_batch_generator, simulator, refit_every = 1, refit_epochs = 10):
+    def refit_predictor(self, predictor_pairs, simulator, refit_every = 1, refit_epochs = 10): #need to rewrite for classification / delete simulator
         """Generate a callback function to refit the yield predictor during encoder training.
 
         Arguments:
@@ -66,19 +63,20 @@ class EncoderTrainer:
 
         def callback(epoch, logs):
             if epoch % refit_every == 0:
-                print()
                 print("refitting...")
                 # get batch of features
-                idx_pairs, feat_pairs = next(predictor_batch_generator)
+                predictor_batch=1000
 
+                idx=np.random.choice(len(predictor_pairs),predictor_batch)
                 # convert to sequences
                 seq_pairs = pd.DataFrame({
-                    "target_features": self.encoder.encode_feature_seqs(feat_pairs[:, 0]),
-                    "query_features": self.encoder.encode_feature_seqs(feat_pairs[:, 1])
+                    "target_features": self.encoder.encode_feature_seqs(predictor_pairs[idx, 0]),
+                    "query_features": self.encoder.encode_feature_seqs(predictor_pairs[idx, 1])
                 })
 
                 # simulate yields
                 sim_results = simulator.simulate(seq_pairs)
+                print("output simulation")
 
                 # encode onehots
                 onehot_seq_pairs = self.predictor.seq_pairs_to_onehots(seq_pairs)
@@ -87,7 +85,7 @@ class EncoderTrainer:
                 self.predictor.trainable(True)
                 history = self.predictor.train(onehot_seq_pairs, sim_results.duplex_yield, epochs=refit_epochs, verbose=0)
                 self.predictor.trainable(False)
-
+                gc.collect()
                 print("predictor loss: %g" % history.history['loss'][-1])
 
         return tf.keras.callbacks.LambdaCallback(on_epoch_end=callback)
