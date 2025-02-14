@@ -9,7 +9,7 @@ class Dataset(object):
     def random_pairs(self, batch_size):
         pass
 
-    def balanced_pairs(self, batch_size): #, sim_thresh): 正解ラベルと不正解ラベルがバランスよく並んでいるはず
+    def balanced_pairs(self, batch_size):
 
         pair_generator = self.random_pairs(batch_size)
 
@@ -22,18 +22,14 @@ class Dataset(object):
             while n_batch < batch_size:
                 chunk_ids, chunk_vals = next(pair_generator)
                 similar = np.apply_along_axis(lambda x: x[0].split("_")[-1]==x[1].split("_")[-1], 1, chunk_ids)
-                # distances = np.sqrt(
-                #     np.square(chunk_vals[:,0] - chunk_vals[:,1]).sum(1)
-                # )
 
-                # similar = distances <= sim_thresh
                 n_sim = similar.sum()
 
                 batch_ids.extend([
                     chunk_ids[similar],
                     chunk_ids[~similar][:n_sim]
                 ])
-                # 偏りがないようにしている
+                
                 batch_vals.extend([
                     chunk_vals[similar],
                     chunk_vals[~similar][:n_sim]

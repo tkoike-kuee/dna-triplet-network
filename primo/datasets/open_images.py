@@ -10,12 +10,9 @@ from .dataset import Dataset
 from tqdm import tqdm
 
 class OpenImagesTrain(Dataset):
-    def __init__(self, path, train, switch_every = 1000, model=None):
+    def __init__(self, path):
         self.path = path
-        self.switch_every = switch_every
-        self.model = model
-        self.train=train
-
+ 
     def get_images(self, img_ids):
         image_dir = os.path.join(self.path, 'images')
 
@@ -28,37 +25,15 @@ class OpenImagesTrain(Dataset):
             yield image
 
     def random_pairs(self, batch_size):
-
-        feature_dir = os.path.join(self.path, 'features')
-        if self.model != None:
-            feature_dir = os.path.join(feature_dir, self.model)
-        # files = os.listdir(feature_dir)
-        # files = [feature_dir+"/train.h5"]
-        files=[self.train]
+        df = pd.read_hdf(self.path)
+        n = len(df)
         while True:
-            if(len(files) > 1):
-                f_a, f_b = np.random.choice(files, 2, replace=False)
-                sys.stdout.write("switching to %s and %s\n" % (f_a, f_b))
+            pairs = np.random.permutation(n)[:batch_size*2].reshape(-1,2)
 
-                df1 = pd.read_hdf(os.path.join(feature_dir, f_a))
-                df2 = pd.read_hdf(os.path.join(feature_dir, f_b))
-
-                df = pd.concat([df1, df2])
-                n = len(df)
-            else:
-                df = pd.read_hdf(os.path.join(feature_dir, files[0]))
-                n = len(df)
-            for _ in range(self.switch_every):
-
-                pairs = np.random.permutation(n)[:batch_size*2].reshape(-1,2)
-
-                yield df.index.values[pairs], df.values[pairs]
+            yield df.index.values[pairs], df.values[pairs]
 
     def makeDataset(self, batch_size):
-        feature_dir = os.path.join(self.path, 'features')
-        if self.model != None:
-            feature_dir = os.path.join(feature_dir, self.model)
-        df = pd.read_hdf(os.path.join(feature_dir, self.train))
+        df = pd.read_hdf(self.path)
 
         x=df.values
         y=np.array([int(tbl_index.split("_")[-1]) for tbl_index in df.index]).reshape(-1,1)
@@ -66,10 +41,7 @@ class OpenImagesTrain(Dataset):
 
 
     def makePairs(self, num_classes=10):
-        feature_dir = os.path.join(self.path, 'features')
-        if self.model != None:
-            feature_dir = os.path.join(feature_dir, self.model)
-        df = pd.read_hdf(os.path.join(feature_dir, self.train))
+        df = pd.read_hdf(self.path)
 
         x = df.values
         y = np.array([int(tbl_index.split("_")[-1]) for tbl_index in df.index])
@@ -80,6 +52,7 @@ class OpenImagesTrain(Dataset):
         labels = list()
 
         for idx1 in range(len(x)):
+            # same class
             x1 = x[idx1]
             label1 = y[idx1]
             idx2 = random.choice(digit_indices[label1])
@@ -88,6 +61,7 @@ class OpenImagesTrain(Dataset):
             labels += list([1])
             pairs += [[x1, x2]]
         
+            # different class
             label2 = random.randint(0, num_classes-1)
             while label2 == label1:
                 label2 = random.randint(0, num_classes-1)
@@ -102,12 +76,9 @@ class OpenImagesTrain(Dataset):
                 
 class OpenImagesVal(Dataset):
     
-    def __init__(self, val_path, model = None):
-        feature_path = os.path.join(val_path) #, 'features')
-        if model != None:
-            feature_path = os.path.join(feature_path, model)
-            feature_path = os.path.join(feature_path, '{}-validation.h5'.format(model))
-        self.df = pd.read_hdf(feature_path)
+    def __init__(self, val_path):
+        self.feature_path = os.path.join(val_path)
+        self.df = pd.read_hdf(self.feature_path)
         print(self.df)
         
     def random_pairs(self, batch_size):

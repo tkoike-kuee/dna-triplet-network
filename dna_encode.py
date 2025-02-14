@@ -70,8 +70,8 @@ def main():
     args = parse.parse_args()
     
     # Initialize the datasets 
-    train_dataset = primo.datasets.OpenImagesTrain(args.train_data, switch_every=10**5, model=None)
-    val_dataset = primo.datasets.OpenImagesVal(args.test_data, model=None)
+    train_dataset = primo.datasets.OpenImagesTrain(args.train_data)
+    val_dataset = primo.datasets.OpenImagesVal(args.test_data)
     query_features = pd.read_hdf(args.query_features)
     target_features = pd.read_hdf(args.target_features)
 
