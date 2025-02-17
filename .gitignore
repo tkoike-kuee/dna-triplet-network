@@ -1,5 +1,5 @@
 *.py
 !run_simulation.py
-!dna_encode.py
+!train_encoder.py
 *.pyc
 *.sh
