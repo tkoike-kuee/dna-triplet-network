@@ -95,7 +95,6 @@ def main():
     # encode the features into DNA sequences
     target_features = pd.read_hdf(args.test_data)
     target_seqs = encoder.encode_feature_seqs(target_features)
-    # query_seqs = encoder.encode_feature_seqs(query_features)
     query_seqs = encode_queries(encoder, args.train_data, args.num_classes)
 
     print("Saving the sequences")

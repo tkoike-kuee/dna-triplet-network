@@ -76,13 +76,15 @@ class Predictor:
 
         return onehot_pairs_T
 
-    def train(self, sequences, yields, learning_rate=1e-3, **fit_kwargs):
+    # def train(self, sequences, yields, learning_rate=1e-3, **fit_kwargs):
+    def train(self, train_dataset, val_dataset, learning_rate=1e-3, **fit_kwargs):
         print("Predictor refitting...")
         self.model.compile(tf.keras.optimizers.RMSprop(learning_rate), tf.keras.losses.binary_crossentropy)
+
         history = self.model.fit(
-            sequences,
-            yields,
-            **fit_kwargs
+            train_dataset,
+            epochs=fit_kwargs['epochs'],
+            validation_data=val_dataset,
         )
         return history
 

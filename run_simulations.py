@@ -8,13 +8,17 @@ from tqdm import tqdm
 import os
 import argparse
 
-def main(args):
+def main():
     parse = argparse.ArgumentParser()
     parse.add_argument("-t", "--target", type=str, help="target path")
     parse.add_argument("-q", "--query", type=str, help="query path")
     parse.add_argument("-o", "--output", type=str, help="output path")
 
     args = parse.parse_args()
+
+    print("Loading the sequences")
+    print("target: {}".format(args.target))
+    print("query: {}".format(args.query))
 
     # Initialize the simulator
     cupyck_sess = cupyck.GPUSession(max_seqlen=200, nblocks=2048, nthreads=512)
