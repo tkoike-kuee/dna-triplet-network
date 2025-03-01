@@ -1,5 +1,2 @@
-*.py
-!run_simulation.py
-!train_encoder.py
 *.pyc
 *.sh
