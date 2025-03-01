@@ -99,7 +99,7 @@ def main():
 
     print("Saving the sequences")
     # Save the DNA sequences
-    pd.DataFrame(query_seqs, index=[f"label_{i}" for i in range(args.num_classes)], columns=['FeatureSequence']).to_hdf(args.query_seqs, key='df', mode='w')
+    pd.DataFrame(query_seqs, index=[i for i in range(args.num_classes)], columns=['FeatureSequence']).to_hdf(args.query_seqs, key='df', mode='w')
     pd.DataFrame(target_seqs, index=target_features.index, columns=['FeatureSequence']).to_hdf(args.target_seqs, key='df', mode='w')
     # Save the encoder
     encoder.save(args.encoder)
