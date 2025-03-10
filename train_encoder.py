@@ -12,6 +12,7 @@ import primo.models
 import primo.datasets
 import pandas as pd
 import argparse
+import matplotlib.pyplot as plt
 
 def primo_train(train_dataset, val_dataset, pred, encoder, batch_size, num_classes, epochs=150):
     pairs_train, labels_train = train_dataset.makePairs(num_classes=num_classes)
@@ -87,10 +88,19 @@ def main():
     if(args.loss == 0):
         _, encoder = primo_train(train_dataset, val_dataset, args.predictor, encoder,args.batch_size, args.num_classes, args.epochs)
     elif(args.loss == 1):
-        _, encoder = triplet_train(train_dataset, val_dataset, encoder, args.batch_size, args.length, args.epochs, args.margin)
+        history, encoder = triplet_train(train_dataset, val_dataset, encoder, args.batch_size, args.length, args.epochs, args.margin)
     
     os.makedirs(os.path.dirname(args.encoder), exist_ok=True)
 
+    # Plot the training loss
+    plt.plot(history.history['loss'], label='Training Loss')
+    plt.plot(history.history['val_loss'], label='Validation Loss')
+    plt.xlabel('Epochs')
+    plt.ylabel('Loss')
+    plt.legend()
+    plt.title('Training and Validation Loss')
+    save_path = args.encoder.split(".")[0]+".png"
+    plt.savefig(save_path)
     print("Encoding the sequences")
     # encode the features into DNA sequences
     target_features = pd.read_hdf(args.test_data)
