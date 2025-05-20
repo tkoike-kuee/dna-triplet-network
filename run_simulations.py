@@ -25,8 +25,8 @@ def main():
     simulator = primo.models.Simulator(cupyck_sess)
 
     # Load the sequences
-    target_seqs = pd.read_hdf(args.target)
-    query_seqs = pd.read_hdf(args.query)
+    target_seqs = pd.read_hdf(args.target, key='df', mode='r')
+    query_seqs = pd.read_hdf(args.query, key='df', mode='r')
     total_store = pd.DataFrame()
     os.makedirs(os.path.dirname(args.output), exist_ok=True)
     # Run the simulations in each query sequence

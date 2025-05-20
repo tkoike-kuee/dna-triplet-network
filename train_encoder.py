@@ -59,9 +59,12 @@ def encode_queries(encoder, train_data, num_classes):
 
 def main():
     # Set GPU memory growth
-    config = tf.compat.v1.ConfigProto(gpu_options=tf.compat.v1.GPUOptions(allow_growth=True))
-    session = tf.compat.v1.Session(config=config)
-    tf.compat.v1.keras.backend.set_session(session)
+    phisical_devices = tf.config.list_physical_devices('GPU')
+    if len(phisical_devices) > 0:
+        for gpu in phisical_devices:
+            tf.config.experimental.set_memory_growth(gpu, True)
+    else:
+        print("No GPU found, using CPU")
 
     parse = argparse.ArgumentParser()
     parse.add_argument("--train_data", type=str, help="Path to the training data")
